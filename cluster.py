@@ -47,14 +47,15 @@ class cluster:
                         yield pickle.load(f)
                     except EOFError:
                         break
-
         cluster_pool_list = []
-        for cluster_list in pickle_loader():
-            for cluster_obj in cluster_list:
-                cluster_pool_list.append(cluster_obj)
+        try:                    
+            for cluster_list in pickle_loader():
+                for cluster_obj in cluster_list:
+                    cluster_pool_list.append(cluster_obj)
+        except:
+            pass
         
-        # returned the class objects of cluster
-        return cluster_pool_list
+        return cluster_pool_list # returned the class objects of cluster
 
     def set_cluster_id(self):
         cluster_id = 'cls-'
@@ -199,6 +200,7 @@ class cluster:
         return cluster_id
 
     def init_cluster(cls_obj):
+        print("initialising cluster : ", cls_obj.get_cluster_id())
         mapper_names, mapper_ips = cls_obj.get_mappers()
         reducer_names, reducer_ips = cls_obj.get_reducers()
 
@@ -206,9 +208,10 @@ class cluster:
         
         for mpr in mapper_names:
             subprocess.call(["bash","init_vm.sh",str(mpr), "mapper_server"])
-
+        print("All mappers initialised")
         for rdcr in reducer_names:
             subprocess.call(["bash","init_vm.sh",str(rdcr), "reducer_server"])
+        print("All reducers initialised")
         return cls_obj.get_status()
     
     def get_cluster_ids(cluster_pool):
@@ -256,7 +259,7 @@ class cluster:
         # output_file = cls_obj.create_master(cluster_id, 'Master')
         
         master_name = cls_obj.get_master()[0][0]
-        subprocess.call(["bash","run_master.sh",master_name, cluster_id, cls_obj.get_mapper_func() ,cls_obj.get_reducer_func(), cls_obj.get_input_file(), cls_obj.get_output_file()], stdout=temp_file)
+        subprocess.call(["bash","run_master.sh",master_name, cluster_id, cls_obj.get_mapper_func() ,cls_obj.get_reducer_func(), cls_obj.get_input_file(), cls_obj.get_output_file()])
         
         cloud_output_location = str(cluster_id) + '/fnfle-' + cls_obj.get_output_file()
         output_file = cls_obj.get_output_file()
