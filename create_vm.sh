@@ -16,7 +16,7 @@ gcloud compute instances create $MY_INSTANCE_NAME \
 #     --metadata-from-file startup-script=startup-script.sh \
 #     --zone $ZONE \
 #     --tags http-server
-gcloud compute scp keystore.json $USER@$1:/home/$USER --zone=us-west1-a
+# gcloud compute scp keystore.json $USER@$1:/home/$USER --zone=us-west1-a
 
 gcloud compute instances describe $1 --zone=us-west1-a --format='get(networkInterfaces[0].networkIP)'
 
