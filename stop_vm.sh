@@ -1,0 +1,1 @@
+gcloud compute instances stop $1 --zone=us-west1-a 
