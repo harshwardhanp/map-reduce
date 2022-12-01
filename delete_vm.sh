@@ -1,1 +1,1 @@
-gcloud compute instances delete $1 --zone=us-west1-a 
+yes Yes | gcloud compute instances delete $1 --zone=us-west1-a 

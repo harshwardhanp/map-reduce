@@ -6,9 +6,7 @@ import firebase_admin
 import pickle
 from firebase_admin import credentials, initialize_app, storage
 import sys
-import splitter
 import os
-import combiner
 from reduce import reduce_function
 
 def send(message, function_name, cluster_id, host_ip):
@@ -170,7 +168,7 @@ try:
 
     username, cluster_id, mapper_func, reducer_func, input_file, output_file= sys.argv[1:]
     # username = sys.argv[1]
-    certificate_file_path = "home/"+username+"/keystore.json"
+    certificate_file_path = "/home/"+username+"/keystore.json"
     
     # Init firebase with your credentials
     cred = credentials.Certificate(certificate_file_path)

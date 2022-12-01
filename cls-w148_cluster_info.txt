@@ -1,0 +1,7 @@
+cls-w148-master-0:10.138.0.2
+cls-w148-mapper-0:10.138.0.3
+cls-w148-mapper-1:10.138.0.4
+cls-w148-mapper-2:10.138.0.5
+cls-w148-reducer-0:10.138.0.6
+cls-w148-reducer-1:10.138.0.7
+cls-w148-reducer-2:10.138.0.8

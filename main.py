@@ -74,7 +74,7 @@ if __name__ == "__main__":
 
                 # cluster.update_cluster_object()
                 # cluster.update_cluster_pool(cluster_pool)
-                print(cluster_id, ' is ', status)
+                print(cluster_id, 'Initiated..... Current status :: ', status)
                     
             #cls-set-mapred -id cls_id -m _mapper_ -r _reducer_
             elif cmd_format[0] == "cls-set-mapred" :
