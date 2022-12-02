@@ -8,8 +8,9 @@ from firebase_admin import credentials, initialize_app, storage
 import os 
 from reduce import reduce_function
 
-username = sys.argv[1]
-certificate_file_path = "/home/"+username+"/keystore.json"
+# username = sys.argv[1]
+# certificate_file_path = "/home/"+username+"/keystore.json"
+certificate_file_path = "keystore.json"
 
 # Init firebase with your credentials
 cred = credentials.Certificate(certificate_file_path)
@@ -22,53 +23,26 @@ class Server:
         self.host = host
         self.port = port
         self.thread_count = 0
-
-    def download_file(self, input_file_name, output_file_name):
-        bucket = storage.bucket()
-        blob = bucket.blob(input_file_name)   
-        blob.download_to_filename(output_file_name)
-    
-    def upload_file(self, source_file, destination_file):
-        bucket = storage.bucket()
-        blob = bucket.blob(destination_file)   
-        blob.upload_from_filename(source_file)
-
-    def get_reducer_data(self, cluster_id):
-        cluster_info_filename = cluster_id + "_cluster_info.txt"
-        self.download_file(cluster_info_filename, cluster_info_filename)   
-        
-
-        list_machines = []
-        with open(cluster_info_filename,"r") as f:
-            list_machines = f.readlines()
-
-        reducer_names = []
-        for line in list_machines:
-            name_ip = line.split(":")
-            if cluster_id + "-reducer-" in name_ip[0]: 
-                reducer_names.append(name_ip[0])
-        return len(reducer_names)
         
     def perform_reduce(self, hostname, cluster_id, client_connection):
         try:
             print("WC reducer initialised")
             status = 'in-progress'
             input_data_file = cluster_id + '/r-' + hostname + '-rdinput.txt'
-            output_data_file = cluster_id + '-r-' + hostname + '-rdinput.txt'
-            self.download_file(input_data_file, output_data_file)
-            print("downloaded reducer input")
-            data_file = open(output_data_file, 'r')
-            file_lines = data_file.readlines()
-            reducer_output = reduce_function(file_lines)
+            bucket = storage.bucket()
+            IDF = bucket.blob(input_data_file)
+
+            reducer_output = {}
+            with IDF.open('r') as data_file:
+                file_lines = data_file.readlines()
+                reducer_output = reduce_function(file_lines) 
             
             cloud_output_file = str(cluster_id) + '/' + str(hostname) + '-rdoutput.txt'
-            local_output_file = str(cluster_id) + '-' + str(hostname) + '-rdoutput.txt'
-            output_file = open(local_output_file, "w+")
-            for key, value in reducer_output.items():
-                output_file.write(str(key) + ' ' + str(value) + '\n')
-            output_file.close()
-            self.upload_file(local_output_file, cloud_output_file )
-
+            COF = bucket.blob(cloud_output_file)
+            with COF.open("w") as output_file:
+                for key, value in reducer_output.items():
+                    output_file.write(str(key) + ' ' + str(value) + '\n')
+            
             status = 'completed'
             client_connection.send('Completed'.encode())
         except Exception as e:

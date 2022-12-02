@@ -8,9 +8,9 @@ from firebase_admin import credentials, initialize_app, storage
 import os 
 from map import map_function
 
-username = sys.argv[1]
-certificate_file_path = "/home/"+username+"/keystore.json"
-# certificate_file_path = "keystore.json"
+# username = sys.argv[1]
+# certificate_file_path = "/home/"+username+"/keystore.json"
+certificate_file_path = "keystore.json"
 
 # Init firebase with your credentials
 cred = credentials.Certificate(certificate_file_path)
@@ -23,23 +23,14 @@ class Server:
         self.port = port
         self.thread_count = 0
 
-    def download_file(self, input_file_name, output_file_name):
-        bucket = storage.bucket()
-        blob = bucket.blob(input_file_name)   
-        blob.download_to_filename(output_file_name)
-    
-    def upload_file(self, source_file, destination_file):
-        bucket = storage.bucket()
-        blob = bucket.blob(destination_file)   
-        blob.upload_from_filename(source_file)
-
     def get_reducer_data(self, cluster_id):
         cluster_info_filename = cluster_id + "_cluster_info.txt"
-        self.download_file(cluster_info_filename, cluster_info_filename)   
         
-
+        bucket = storage.bucket()
+        CIF = bucket.blob(cluster_info_filename)   
+        
         list_machines = []
-        with open(cluster_info_filename,"r") as f:
+        with CIF.open("r") as f:
             list_machines = f.readlines()
 
         reducer_names = []
@@ -51,18 +42,21 @@ class Server:
         
     def perform_map(self, hostname, cluster_id, client_connection):
         try:
+            bucket = storage.bucket()
             print("WC Mapper initialised")
             status = 'in-progress'
             input_data_file = cluster_id + '/' + hostname + '-mpinput.txt'
-            output_data_file = cluster_id + '-' + hostname + '-mpinput.txt'
-            self.download_file(input_data_file, output_data_file)
+
             print("downloaded mapper input")
-            data_file = open(output_data_file, 'r')
-            file_text = data_file.read()
-            input_data = file_text.split()
+            
+            IDF = bucket.blob(input_data_file) 
+            input_data = []
+            with IDF.open('r') as data_file:
+                file_text = data_file.read()
+                input_data = file_text.split()
 
             print("splitted input data")
-            mapper_output = map_function(output_data_file, input_data)
+            mapper_output = map_function(input_data_file, input_data)
             
             print("map completed")
             number_of_reducers = self.get_reducer_data(cluster_id)
@@ -70,7 +64,8 @@ class Server:
 
             output_file = [0] * number_of_reducers
             for i in range(number_of_reducers):
-                output_file[i] = open(str(cluster_id + '-m-' + hostname + '-' + str(i + 1) + '.txt'), "w+")
+                OFN = bucket.blob(str(cluster_id + '/m-' + hostname + '-' + str(i + 1) + '.txt')) 
+                output_file[i] = OFN.open("w")
             
             print("created mapper output files")
             
@@ -81,11 +76,6 @@ class Server:
             print("separate output files created and data is written on each of them")
             for i in range(number_of_reducers):
                 output_file[i].close()
-
-            for i in range(number_of_reducers):
-                mp_opfile_localname = cluster_id + '-m-' + hostname + '-' + str(i + 1) + '.txt'
-                mp_opfile_uploadname = cluster_id + '/m-' + hostname + '-' + str(i + 1) + '.txt'
-                self.upload_file(mp_opfile_localname, mp_opfile_uploadname )
 
             status = 'completed'
             client_connection.send('Completed'.encode())

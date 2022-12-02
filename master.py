@@ -6,7 +6,6 @@ import firebase_admin
 import pickle
 from firebase_admin import credentials, initialize_app, storage
 import sys
-import os
 from reduce import reduce_function
 
 def send(message, function_name, cluster_id, host_ip):
@@ -25,12 +24,12 @@ def send(message, function_name, cluster_id, host_ip):
         print("Response from client", response)
         if response != "Success":
             raise Exception("Error Occured in Mapredce phase")
-        print(message)
-        print(cluster_id)
-        print(function_name)
-        print(host_ip)
+        # print(message)
+        # print(cluster_id)
+        # print(function_name)
+        # print(host_ip)
         command = message + " " + cluster_id +" "+ function_name
-        print(command)
+        # print(command)
         clientSocket.send(command.encode())
 
         Response = clientSocket.recv(1024).decode("utf-8")
@@ -55,96 +54,77 @@ def upload_file(source_file, destination_file):
     blob.upload_from_filename(source_file)
 
 def mapper_output_combiner(cluster_identifier, reducer_number, reducer_identifier, mapper_list):
-    local_input_file_for_R = str(cluster_identifier) + '-r-' + str(reducer_identifier) + '-rdinput.txt'
+    bucket = storage.bucket()
     cloud_input_file_for_R = str(cluster_identifier) + '/r-' + str(reducer_identifier) + '-rdinput.txt'
-    
-    input_file = open(local_input_file_for_R, "w+")
-    for mapper in mapper_list:
-        mp_opfile_cloudname = cluster_identifier + '/m-' + mapper + '-' + str(reducer_number) + '.txt'
-        mp_opfile_localname = cluster_identifier + '-m-' + mapper + '-' + str(reducer_number) + '.txt'
-        download_file(mp_opfile_cloudname, mp_opfile_localname )
+    CIR = bucket.blob(cloud_input_file_for_R)   
 
-    # mp_opfile_uploadname = cluster_id + '/m-' + hostname + '-' + str(i + 1) + '.txt'
-    for mapper in mapper_list:
-        mp_opfile_localname = cluster_identifier + '-m-' + mapper + '-' + str(reducer_number) + '.txt'
-        with open(mp_opfile_localname, "r") as mapper_output:
-            input_file.write(mapper_output.read())
-
-    input_file.close()
-    upload_file(local_input_file_for_R, cloud_input_file_for_R)
+    with CIR.open("w") as input_file:
+        for mapper in mapper_list:
+            mp_opfile_localname = cluster_identifier + '/m-' + mapper + '-' + str(reducer_number) + '.txt'
+            MOL = bucket.blob(mp_opfile_localname)   
+            with MOL.open("r") as mapper_output:
+                input_file.write(mapper_output.read())
 
 
 def reducer_output_combiner(cluster_identifier, reducer_list, output_file_name):
-    local_rdoutput_combiner = str(cluster_identifier) + '-r-rdoutput-combined.txt'
-    # cloud_rdoutput_combiner = str(cluster_identifier) + '/r-rdoutput-combined.txt'
-    
+    bucket = storage.bucket()
+    cloud_rdoutput_combiner = str(cluster_identifier) + '/r-rdoutput-combined.txt'
+    CRC = bucket.blob(cloud_rdoutput_combiner)   
+    with CRC.open("w") as rdoutput_combiner:
+        for reducer in reducer_list:
+            reducer_r_output_file = cluster_identifier + '/' + reducer + '-rdoutput.txt'
+            with open(reducer_r_output_file, "r") as reducer_output:
+                rdoutput_combiner.write(reducer_output.read())
 
+    # data_file = open(local_rdoutput_combiner, "r")
+    with CRC.open("r") as data_file:
+        file_lines = data_file.readlines()
+        reducer_output = reduce_function(file_lines)
+        cloud_output_location = str(cluster_identifier) + '/fnfle-' + output_file_name
+        COL = bucket.blob(cloud_output_location)   
+        with COL.open("w") as output_file:
+            for key, value in reducer_output.items():
+                output_file.write(str(key) + ' ' + str(value) + '\n')
 
-    for reducer in reducer_list:
-        mp_opfile_cloudname = cluster_identifier + '/' + reducer + '-rdoutput.txt'
-        mp_opfile_localname = cluster_identifier + '-' + reducer + '-rdoutput.txt'
-        download_file(mp_opfile_cloudname, mp_opfile_localname )
-    
-    rdoutput_combiner = open(local_rdoutput_combiner, "w+")
-    
-    # mp_opfile_uploadname = cluster_id + '/m-' + hostname + '-' + str(i + 1) + '.txt'
-    for reducer in reducer_list:
-        reducer_r_output_file = cluster_identifier + '-' + reducer + '-rdoutput.txt'
-        with open(reducer_r_output_file, "r") as reducer_output:
-            rdoutput_combiner.write(reducer_output.read())
-
-    rdoutput_combiner.close()
-
-    data_file = open(local_rdoutput_combiner, "r")
-    
-    file_lines = data_file.readlines()
-
-    reducer_output = reduce_function(file_lines)
-
-    local_output_location = str(cluster_identifier) + '-fnfle-' + output_file_name
-    cloud_output_location = str(cluster_identifier) + '/fnfle-' + output_file_name
-    
-    output_file = open(local_output_location, "w+")
-    for key, value in reducer_output.items():
-        output_file.write(str(key) + ' ' + str(value) + '\n')
-    output_file.close()
-    upload_file(local_output_location, cloud_output_location)
     return cloud_output_location
 
-def filter_text(dirty_file):
-    data_file = open(dirty_file, 'r', encoding='utf-8')
-    dirty_text = data_file.read()
+def filter_text(cluster_identifier, dirty_file):
+    bucket = storage.bucket()
+    cls_dirty_file = cluster_identifier+'/'+dirty_file
+    DFL = bucket.blob(cls_dirty_file)   
+    clean_file_name = cluster_identifier+'/'+'clean_'+dirty_file
 
-    killpunctuation = str.maketrans('', '', r"()\"“”’#/@;:<>{}[]*-=~|.?,0123456789")
+    with DFL.open('r', encoding='utf-8') as data_file:
+        dirty_text = data_file.read()
 
-    clean_text = dirty_text.translate(killpunctuation)
+        killpunctuation = str.maketrans('', '', r"()\"“”’#/@;:<>{}[]*-=~|.?,0123456789")
 
-    clean_file_name = 'clean_'+dirty_file
-    fp = open(clean_file_name, 'w+', encoding='utf-8')
-    fp.write(clean_text.lower())
-    fp.close()
+        clean_text = dirty_text.translate(killpunctuation)
+
+        CFN = bucket.blob(clean_file_name)
+        with CFN.open('w', encoding='utf-8') as fp:
+            fp.write(clean_text.lower())
     return clean_file_name
 
 def input_data_splitter(cluster_identifier, mapper_identifiers, input_file):
-    number_of_mappers = len(mapper_identifiers)
-    data_file = open(filter_text(input_file), 'r')
-    file_text = data_file.read()
-    input_data = file_text.split()
-    data_file.close()
     bucket = storage.bucket()
-
-    # if not os.path.exists(cluster_identifier):
-    #     os.mkdir(cluster_identifier)
-
-    for i in range(number_of_mappers):
-        output_file_name = str(cluster_identifier) + '/' + str(mapper_identifiers[i]) + '-mpinput.txt'
-        output_file = open( output_file_name , "w+")
-        data = input_data[round(i * (len(input_data)/number_of_mappers)):round((i+1) * (len(input_data)/number_of_mappers))]
-        for word in data:
-            output_file.write(word+'\n')
-        output_file.close()
-        blob = bucket.blob(output_file_name)   
-        blob.upload_from_filename(output_file_name)
+    number_of_mappers = len(mapper_identifiers)
+    clean_file_name = filter_text(cluster_identifier, input_file)
+    CFN = bucket.blob(clean_file_name)
+    input_data = []
+    with CFN.open('r') as data_file:
+        file_text = data_file.read()
+        input_data = file_text.split()
+    print("got input data")
+    for  i, mapper_name in enumerate(mapper_identifiers):
+        output_file_name = str(cluster_identifier) + '/' + str(mapper_name) + '-mpinput.txt'
+        OFN = bucket.blob(output_file_name)
+        with OFN.open("w") as output_file:
+            start = round(i * len(input_data)/number_of_mappers)
+            end = round((i+1) * int(len(input_data)/number_of_mappers))
+            data = input_data[start:end]
+            for word in data:
+                output_file.write(word+'\n')
 
 # print(send("127.0.1.1",1432,"get Harsh"))
 # 1. get list of arguments - clusterid, mapper_function, reducer_function
@@ -168,32 +148,23 @@ try:
 
     username, cluster_id, mapper_func, reducer_func, input_file, output_file= sys.argv[1:]
     # username = sys.argv[1]
-    certificate_file_path = "/home/"+username+"/keystore.json"
-    # certificate_file_path = "keystore.json"
-    
+    # certificate_file_path = "/home/"+username+"/keystore.json"
+    certificate_file_path = "keystore.json"
+
     # Init firebase with your credentials
     cred = credentials.Certificate(certificate_file_path)
     initialize_app(cred, {'storageBucket': 'h-cluster-pool'})
-    
+
     cluster_info_filename = cluster_id + "_cluster_info.txt"
     # uncomment
     bucket = storage.bucket()
     blob = bucket.blob(cluster_info_filename)   
-    
-    #Create a cluster_directory if cluster directory does not exist
-    if not os.path.exists(cluster_id):
-        os.mkdir(cluster_id)
 
     list_machines = []
     # uncomment
     with blob.open("r") as f:
         list_machines = f.readlines()
 
-    # comment
-    # with open(cluster_info_filename, "r") as f:
-    #     list_machines = f.readlines()
-    
-    # print(list_machines)
     mapper = {}
     reducer = {}
 
@@ -205,10 +176,9 @@ try:
             reducer[name_ip[0]] = name_ip[1]
 
     mappers = len(mapper)
+    print("Basic Setup complete")
+    print(mapper)
 
-    blob = bucket.blob(cluster_id +"/"+input_file)   
-    blob.download_to_filename(input_file)
-    
     input_data_splitter(cluster_id, mapper.keys(), input_file)
 
     def mapper_init():
@@ -221,7 +191,7 @@ try:
     
     mapper_init()
 
-    for key, index in enumerate(reducer.keys()):
+    for index, key in enumerate(reducer.keys()):
         mapper_output_combiner(cluster_id, index + 1, key, mapper.keys())
 
     def reducer_init():
