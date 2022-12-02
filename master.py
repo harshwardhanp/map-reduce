@@ -147,9 +147,9 @@ try:
         raise Exception("Invalud argument number")
 
     username, cluster_id, mapper_func, reducer_func, input_file, output_file= sys.argv[1:]
-    # username = sys.argv[1]
-    # certificate_file_path = "/home/"+username+"/keystore.json"
-    certificate_file_path = "keystore.json"
+    username = sys.argv[1]
+    certificate_file_path = "/home/"+username+"/keystore.json"
+    # certificate_file_path = "keystore.json"
 
     # Init firebase with your credentials
     cred = credentials.Certificate(certificate_file_path)
