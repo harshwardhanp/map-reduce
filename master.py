@@ -8,18 +8,21 @@ from firebase_admin import credentials, initialize_app, storage
 import sys
 from reduce import reduce_function
 
+username = sys.argv[1]
+certificate_file_path = "/home/"+username+"/keystore.json"
+# certificate_file_path = "keystore.json"
+
+# Init firebase with your credentials
+cred = credentials.Certificate(certificate_file_path)
+initialize_app(cred, {'storageBucket': 'h-cluster-pool'})
+
 def send(message, function_name, cluster_id, host_ip):
     host = host_ip
     port = 3278
     reply_msg=""
-
     try:
         clientSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         clientSocket.connect((host, port))
-    except socket.error as e:
-        print("failed")
-
-    try:
         response = clientSocket.recv(1024).decode()
         print("Response from client", response)
         if response != "Success":
@@ -31,13 +34,11 @@ def send(message, function_name, cluster_id, host_ip):
         command = message + " " + cluster_id +" "+ function_name
         # print(command)
         clientSocket.send(command.encode())
-
         Response = clientSocket.recv(1024).decode("utf-8")
         if Response != "Completed":
             raise Exception("Error Occured in Mapredce phase")
         clientSocket.send(str.encode("exit"))
         clientSocket.close()
-
         return 0
     except Exception as ex:
         return 1
@@ -93,14 +94,10 @@ def filter_text(cluster_identifier, dirty_file):
     cls_dirty_file = cluster_identifier+'/'+dirty_file
     DFL = bucket.blob(cls_dirty_file)   
     clean_file_name = cluster_identifier+'/'+'clean_'+dirty_file
-
     with DFL.open('r', encoding='utf-8') as data_file:
         dirty_text = data_file.read()
-
         killpunctuation = str.maketrans('', '', r"()\"“”’#/@;:<>{}[]*-=~|.?,0123456789")
-
         clean_text = dirty_text.translate(killpunctuation)
-
         CFN = bucket.blob(clean_file_name)
         with CFN.open('w', encoding='utf-8') as fp:
             fp.write(clean_text.lower())
@@ -147,13 +144,7 @@ try:
         raise Exception("Invalud argument number")
 
     username, cluster_id, mapper_func, reducer_func, input_file, output_file= sys.argv[1:]
-    username = sys.argv[1]
-    certificate_file_path = "/home/"+username+"/keystore.json"
-    # certificate_file_path = "keystore.json"
 
-    # Init firebase with your credentials
-    cred = credentials.Certificate(certificate_file_path)
-    initialize_app(cred, {'storageBucket': 'h-cluster-pool'})
 
     cluster_info_filename = cluster_id + "_cluster_info.txt"
     # uncomment
@@ -185,7 +176,6 @@ try:
         while True:
             pool = multiprocessing.Pool(processes=mappers)
             outputs = pool.starmap(send , [("init_map", mapper_func, cluster_id, value) for value in mapper.values()])
-
             if sum(outputs) == 0:
                 break
     

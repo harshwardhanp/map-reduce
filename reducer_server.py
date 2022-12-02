@@ -81,7 +81,7 @@ class Server:
 
 if __name__ == '__main__':
   
-    hostname ="cls-f8ly-reducer-0" #socket.gethostname()
+    hostname = socket.gethostname()
     server_ip = socket.gethostbyname(socket.gethostname())
     port = 3278
     

@@ -113,7 +113,7 @@ if __name__ == "__main__":
                 
                 input_file_path = cmd_format[4]
                 output_file = cmd_format[6]
-                
+                print()
                 input_file = Path(input_file_path)
                 if not input_file.is_file():
                     raise Exception("Input file Error!!! Please provide valid input file")
@@ -128,7 +128,7 @@ if __name__ == "__main__":
                 cluster_id = cmd_format[2]
                 cls_obj = cluster.get_cluster_obj(cluster_id, cluster_pool)
 
-                if not (cls_obj.set_input_file(input_file) and cls_obj.set_output_file(output_file)):
+                if not (cls_obj.set_input_file(input_file_path) and cls_obj.set_output_file(output_file)):
                     raise RuntimeError("Runtime Error!!! Error occured while setting up mapper and reducer")
                 print("Input and output files are set....  Running mapreduce")
                 # running map reduce with

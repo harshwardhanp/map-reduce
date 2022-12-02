@@ -1,0 +1,1 @@
+gcloud compute scp keystore.json $USER@$1:/home/$USER --zone=us-west1-a

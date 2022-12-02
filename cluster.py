@@ -74,7 +74,8 @@ class cluster:
         with open(blob_name, 'w') as f: 
             for index, mp_name in enumerate(self.__master_names):
                 f.write('%s:%s\n' % (self.__master_names[index], self.__master_ips[index]))
-        
+                subprocess.call(["bash","transfer_keystore.sh",str(mp_name), "mapper_server"])
+
     def get_master(self):
         return self.__master_names , self.__master_ips
 
@@ -86,6 +87,7 @@ class cluster:
         with open(blob_name, 'a') as f: 
             for index, mp_name in enumerate(self.__mapper_names):
                 f.write('%s:%s\n' % (self.__mapper_names[index], self.__mapper_ips[index]))
+                subprocess.call(["bash","transfer_keystore.sh",str(mp_name), "mapper_server"])
 
     def get_mappers(self):
         return self.__mapper_names, self.__mapper_ips
@@ -104,8 +106,9 @@ class cluster:
         blob_name = self.get_cluster_id() + "_cluster_info.txt"
 
         with open(blob_name, 'a') as f:
-            for index, mp_name in enumerate(self.__reducer_names):
+            for index, rd_name in enumerate(self.__reducer_names):
                 f.write('%s:%s\n' % (self.__reducer_names[index], self.__reducer_ips[index]))
+                subprocess.call(["bash","transfer_keystore.sh",str(rd_name), "mapper_server"])
 
     def get_reducers(self):
         return self.__reducer_names, self.__reducer_ips
@@ -206,12 +209,21 @@ class cluster:
 
         cls_obj.set_status("Running")
         
+
         for mpr in mapper_names:
-            subprocess.call(["bash","init_vm.sh",str(mpr), "mapper_server"])
-        print("All mappers initialised")
+            subprocess.call(["bash","transfer_keystore.sh",str(mpr), "mapper_server"])
+        print("All mappers initialised with keystore")
         for rdcr in reducer_names:
-            subprocess.call(["bash","init_vm.sh",str(rdcr), "reducer_server"])
-        print("All reducers initialised")
+            subprocess.call(["bash","transfer_keystore.sh",str(rdcr), "reducer_server"])
+        print("All reducers initialised  with keystore")
+
+        # for mpr in mapper_names:
+        #     subprocess.call(["bash","init_vm.sh",str(mpr), "mapper_server"])
+        # print("All mappers initialised")
+        # for rdcr in reducer_names:
+        #     subprocess.call(["bash","init_vm.sh",str(rdcr), "reducer_server"])
+        
+        
         return cls_obj.get_status()
     
     def get_cluster_ids(cluster_pool):
