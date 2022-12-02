@@ -206,7 +206,7 @@ try:
 
     mappers = len(mapper)
 
-    blob = bucket.blob(input_file)   
+    blob = bucket.blob(cluster_id +"/"+input_file)   
     blob.download_to_filename(input_file)
     
     input_data_splitter(cluster_id, mapper.keys(), input_file)

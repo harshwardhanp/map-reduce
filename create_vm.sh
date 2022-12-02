@@ -10,6 +10,14 @@ gcloud compute instances create $MY_INSTANCE_NAME \
     --zone $ZONE \
     --network-interface=network-tier=PREMIUM,subnet=$SUBNET_NAME
 
+# gcloud compute instances create $MY_INSTANCE_NAME \
+#     --image-family=debian-10 \
+#     --image-project=debian-cloud \
+#     --machine-type=g1-small \
+#     --metadata-from-file startup-script=startup-script.sh \
+#     --zone $ZONE \
+#     --network-interface=network-tier=PREMIUM,subnet=$SUBNET_NAME
+
 # new instance create script
 # gcloud compute instances create $MY_INSTANCE_NAME \
 #     --network-interface=network-tier=PREMIUM,subnet=$subnet_name \

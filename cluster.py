@@ -241,15 +241,23 @@ class cluster:
         return self.__reducer_func
 
     def set_input_file(self, input_file):
-        self.__input_file = input_file
-        return True
+        try :
+            self.__input_file = input_file
+            cluster_id = self.get_cluster_id()
+            cluster.upload_file(input_file, cluster_id +"/"+input_file )
+            return True
+        except:
+            return False
 
     def get_input_file(self):
         return self.__input_file
     
     def set_output_file(self, output_file):
-        self.__output_file = output_file
-        return True
+        try:    
+            self.__output_file = output_file
+            return True
+        except:
+            return False
     
     def get_output_file(self):
         return self.__output_file

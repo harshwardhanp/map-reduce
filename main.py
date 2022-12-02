@@ -130,9 +130,9 @@ if __name__ == "__main__":
 
                 if not (cls_obj.set_input_file(input_file) and cls_obj.set_output_file(output_file)):
                     raise RuntimeError("Runtime Error!!! Error occured while setting up mapper and reducer")
-
+                print("Input and output files are set....  Running mapreduce")
                 # running map reduce with
-                output_file = cluster.run_mapred(cls_obj)
+                # output_file = cluster.run_mapred(cls_obj)
                 # cluster.update_cluster_object()
                 # cluster.update_cluster_pool(cluster_pool)
 
