@@ -1,7 +1,0 @@
-cls-4ypc-master-0:10.138.0.2
-cls-4ypc-mapper-0:10.138.0.3
-cls-4ypc-mapper-1:10.138.0.4
-cls-4ypc-mapper-2:10.138.0.5
-cls-4ypc-reducer-0:10.138.0.6
-cls-4ypc-reducer-1:10.138.0.7
-cls-4ypc-reducer-2:10.138.0.8
