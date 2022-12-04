@@ -1,7 +1,0 @@
-cls-sgwq-master-0:10.138.0.2
-cls-sgwq-mapper-0:10.138.0.3
-cls-sgwq-mapper-1:10.138.0.4
-cls-sgwq-mapper-2:10.138.0.5
-cls-sgwq-reducer-0:10.138.0.6
-cls-sgwq-reducer-1:10.138.0.7
-cls-sgwq-reducer-2:10.138.0.8
