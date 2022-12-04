@@ -1,3 +1,3 @@
-NAME                ZONE        MACHINE_TYPE  PREEMPTIBLE  INTERNAL_IP  EXTERNAL_IP    STATUS
-cls-txwu-reducer-1  us-west1-a  g1-small                   10.138.0.6   34.168.165.28  RUNNING
-10.138.0.6
+NAME                ZONE        MACHINE_TYPE  PREEMPTIBLE  INTERNAL_IP  EXTERNAL_IP   STATUS
+cls-4ypc-reducer-2  us-west1-a  g1-small                   10.138.0.8   34.168.82.66  RUNNING
+10.138.0.8

@@ -169,8 +169,18 @@ class cluster:
     def set_status(self, status):
         self.__status = status
 
+    def get_object_status(object):
+        print("Cluster Name \t\t Cluster Status")
+        print(object.get_cluster_id(), "\t\t", object.get_status())
+
     def get_status(self):
         return self.__status
+
+    def get_all_status(cluster_pool):
+        print("Status of clusters in cluster pool")
+        print("Cluster Name \t\t Cluster Status")
+        for object in cluster_pool:
+            print(object.get_cluster_id(), "\t\t", object.get_status())
 
     def upload_details(self):
         
@@ -209,19 +219,22 @@ class cluster:
 
         cls_obj.set_status("Running")
         
+        for mpr in cls_obj.get_mappers()[0]:
+            subprocess.call(["bash","transfer_keystore.sh",str(mpr)])
+        print("Master has been initialised with keystore")
 
         for mpr in mapper_names:
-            subprocess.call(["bash","transfer_keystore.sh",str(mpr), "mapper_server"])
+            subprocess.call(["bash","transfer_keystore.sh",str(mpr)])
         print("All mappers initialised with keystore")
         for rdcr in reducer_names:
-            subprocess.call(["bash","transfer_keystore.sh",str(rdcr), "reducer_server"])
+            subprocess.call(["bash","transfer_keystore.sh",str(rdcr)])
         print("All reducers initialised  with keystore")
 
-        # for mpr in mapper_names:
-        #     subprocess.call(["bash","init_vm.sh",str(mpr), "mapper_server"])
-        # print("All mappers initialised")
-        # for rdcr in reducer_names:
-        #     subprocess.call(["bash","init_vm.sh",str(rdcr), "reducer_server"])
+        for mpr in mapper_names:
+            subprocess.call(["bash","init_vm.sh",str(mpr), "mapper_server"])
+        print("All mappers initialised")
+        for rdcr in reducer_names:
+            subprocess.call(["bash","init_vm.sh",str(rdcr), "reducer_server"])
         
         
         return cls_obj.get_status()
@@ -276,7 +289,6 @@ class cluster:
 
     def run_mapred(cls_obj):
         cluster_id = cls_obj.get_cluster_id()
-        # output_file = cls_obj.create_master(cluster_id, 'Master')
         
         master_name = cls_obj.get_master()[0][0]
         subprocess.call(["bash","run_master.sh",master_name, cluster_id, cls_obj.get_mapper_func() ,cls_obj.get_reducer_func(), cls_obj.get_input_file(), cls_obj.get_output_file()])
@@ -285,9 +297,28 @@ class cluster:
         output_file = cls_obj.get_output_file()
         cls_obj.download_file(cloud_output_location, output_file)
         return output_file
+    
+    def read_output_file(output_file):
+        with open(output_file, 'r') as fp:
+            print(fp.read())
 
     def destroy_cluster(cls_obj):
-        pass
+        try :
+            masters = cls_obj.get_master()[0][0]
+            mappers = cls_obj.get_mappers()[0]
+            reducers = cls_obj.get_reducers()[0]
+            for master_name in masters:
+                subprocess.call(["bash","delete_vm.sh",master_name])
+            for mapper_name in mappers:
+                subprocess.call(["bash","delete_vm.sh",mapper_name])
+            for reducer_name in reducers:
+                subprocess.call(["bash","delete_vm.sh",reducer_name])
+            print("All of the instances deleted")
+            print("Deleting network in the cluster")
+            subprocess.call(["bash","delete_network.sh",cls_obj.get_cluster_id()])
+            return "Destroyed"
+        except:
+            return "Failed"
 
     def update_cluster_pool(cluster_pool):
         
@@ -313,6 +344,7 @@ class cluster:
                 
         with blob.open('wb') as outp:
             pickle.dump(cluster_pool, outp, pickle.HIGHEST_PROTOCOL)
+
 
     def exit():
         print("Exited")
